@@ -42,7 +42,7 @@ end
 function love.load(_args)
   love.window.setVSync(0)
   if (ex == nil) then
-    if (_args and type(_args[1]) == "number") then
+    if (#_args >= 1 and (type(_args[1]) == "number") or type(_args[1]) == "string") then
       ei = _args[1]
     end
     loadEx()

@@ -230,7 +230,11 @@ end
 
 ## Examples
 
-see ``examples\`` for further examples:
+see ``examples\`` for further examples.
+
+run ``love .`` on ``main.lua`` to run the examples.
+
+need love2D 11.4 to execute.
 
 ## Limitations
 
