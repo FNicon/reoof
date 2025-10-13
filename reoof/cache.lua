@@ -47,7 +47,7 @@ local function toString(v)
     end
   elseif type(v) == "table" then
     if (v.__tostring()) then
-      return v
+      return ""
     else
       return ""
     end
