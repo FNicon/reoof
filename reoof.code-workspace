@@ -1,0 +1,11 @@
+{
+	"folders": [
+		{
+			"name": "Root",
+			"path": ".",
+		}
+	],
+	"settings": {
+		"terminal.integrated.defaultProfile.windows": null
+	}
+}
