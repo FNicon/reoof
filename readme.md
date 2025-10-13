@@ -8,7 +8,8 @@ This is a simple and straightforward caching and pool library
 
 ## Install
 
-add ``reoof/cache.lua`` and ``reoof/pool.lua`` inside your project
+add ``reoof/cache.lua`` or ``reoof/pool.lua`` inside your project.
+they are independent of each other.
 
 ## How to Use
 
@@ -32,7 +33,7 @@ to load resource to cache
 
 #### function __tostring(self: Cache) -> string
 
-to print for debug
+to print for debug ``{"pool" : {"name": "something", "#active" : 0, "#hidden" : 0, "total" : 0 }}``
 
 ```lua
   love.graphics.print(audio_cache:__tostring(), 0, 0)
@@ -136,6 +137,10 @@ to release specific entity. it'll check from active table first then hidden tabl
 #### function __tostring(self: Pool) -> string
 
 for debug purposes. ``{"pool" : {"name": "something", "#active" : 0, "#hidden" : 0, "total" : 0 }}``
+
+```lua
+  love.graphics.print(entity_pool:__tostring(), 0, 0)
+```
 
 #### Pool.active: any[]
 
