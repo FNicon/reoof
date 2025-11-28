@@ -59,16 +59,17 @@ local function to_string(v)
       return tostring(v)
     else
       local temp = {}
-      local res = {"{"}
+      local empty_tbl_str = {"{", "", "}"}
       for k, _v in ipairs(v) do
-        insert(temp, "[\"")
-        insert(temp, k)
-        insert(temp, "\"] = ")
-        insert(temp, to_string(_v))
+        local v_str = to_string(_v)
+        if (v_str ~= "") then
+          insert(temp, concat({"[\"", k, "\"] = ", v_str}))
+        else
+          insert(temp, concat({"[\"", k, "\"]"}))
+        end
       end
-      insert(res, concat(temp, ","))
-      insert(res, "}")
-      return concat(res)
+      empty_tbl_str[2] = concat(temp, ",")
+      return concat(empty_tbl_str)
     end
   elseif type(v) == "function" then
     -- local test = debug.getinfo(v)
