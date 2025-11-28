@@ -1,10 +1,14 @@
+local concat = table.concat
+
 ---@class Pool
 ---@field private fn function
 ---@field private rfn function
+---@field private efn function
 ---@field active any[]
 ---@field hidden any[]
 ---@field max number | nil
 ---@field name string
+---@field msg Pool.msg
 local pool = {
   _VERSION = "0.0.0-alpha",
   _DESCRIPTION = "A simple and straightforward pool made for LÖVE.",
@@ -36,13 +40,21 @@ local pool = {
 
 pool.__index = pool
 
+--- default equal function
+---@param v1 any
+---@param v2 any
+local function defaultEqual(v1, v2)
+  return v1 == v2
+end
+
 --- Return the first index with the given value (or nil if not found).
 ---@param array any[]
 ---@param value any
+---@param efn fun(...):boolean
 ---@return number?
-local function indexOf(array, value)
+local function indexOf(array, value, efn)
   for i, v in ipairs(array) do
-    if v == value then
+    if efn(v, value) then
       return i
     end
   end
@@ -54,19 +66,53 @@ end
 ---@param rfn fun(...):any reset Function
 ---@param name? string for debug purposes
 ---@param max? number pool max size
+---@param efn? fun(...):boolean equal Function
 ---@return Pool self
-function pool.new(fn, rfn, name, max)
+function pool.new(fn, rfn, name, max, efn)
   local self = setmetatable({}, pool)
   self.active = {}
   self.hidden = {}
   self.fn = fn
   self.rfn = rfn
+  self.efn = efn or defaultEqual
   local _max = max
   if (_max == 0) then
     _max = nil
   end
   self.max = _max or nil
   self.name = name or ""
+
+  ---@class Pool.msg
+  ---@field debug string[]
+  ---@field warn_put_wrong string
+  ---@field warn_release_wrong string
+  ---@field warn_release_hidden_wrong string[]
+  ---@field warn_release_active_wrong string[]
+  self.msg = {
+    debug = {
+      "{ \"pool\" : { \"name\" : \"",
+        self.name,
+      "\", \"#active\" : ",
+        tostring(#self.active),
+      ", \"#hidden\": ",
+        tostring(#self.hidden),
+      ", \"total\": ",
+        tostring(#self.active + #self.hidden),
+      " }}"
+    },
+    warn_put_wrong = "WARNING : trying to insert entity not from generate function",
+    warn_release_wrong = "WARNING : trying to release object not from generate function",
+    warn_release_hidden_wrong = {
+      "WARNING : during release hidden, ",
+      "",
+      " don't have release function"
+    },
+    warn_release_active_wrong = {
+      "WARNING : during release active, ",
+      "",
+      " don't have release function"
+    }
+  }
   return self
 end
 
@@ -74,7 +120,7 @@ end
 ---@param self Pool
 ---@param entity any
 function pool:put(entity)
-  local idx = indexOf(self.active, entity)
+  local idx = indexOf(self.active, entity, self.efn)
   if (idx) then
     if (self.max) then
       if (#self.hidden < self.max) then
@@ -87,7 +133,7 @@ function pool:put(entity)
     end
     table.remove(self.active, idx)
   else
-    print("WARNING : trying to insert entity not from generate function")
+    print(self.msg.warn_put_wrong)
   end
   return self
 end
@@ -129,25 +175,27 @@ function pool:release(entity)
     setmetatable(self, nil)
     self = nil
   else
-    local idx = indexOf(self.active, entity)
+    local idx = indexOf(self.active, entity, self.efn)
     if (idx) then
       if (self.active[idx].release) then
         self.active[idx]:release()
         table.remove(self.active, idx)
       else
-        print("WARNING : during release active, " .. idx .. " don't have release function")
+        self.msg.warn_release_active_wrong[2] = tostring(idx)
+        print(concat(self.msg.warn_release_active_wrong))
       end
     else
-      idx = indexOf(self.hidden, entity)
+      idx = indexOf(self.hidden, entity, self.efn)
       if (idx) then
         if (self.hidden[idx].release) then
           self.hidden[idx]:release()
           table.remove(self.hidden, idx)
         else
-          print("WARNING : during release hidden, " .. idx .. " don't have release function")
+          self.msg.warn_release_hidden_wrong[2] = tostring(idx)
+          print(concat(self.msg.warn_release_hidden_wrong))
         end
       else
-        print("WARNING : trying to release object not from generate function")
+        print(self.msg.warn_release_wrong)
       end
     end
   end
@@ -157,9 +205,10 @@ end
 ---@param self Pool
 ---@return string
 function pool:__tostring()
-  local total = #self.active + #self.hidden
-  local result = "{ \"pool\" : { \"name\" : \"" .. self.name ..  "\", \"#active\" : " .. #self.active .. ", \"#hidden\": " .. #self.hidden .. ", \"total\": " .. total .. " }}"
-  return result
+  self.msg.debug[4] = tostring(#self.active)
+  self.msg.debug[6] = tostring(#self.hidden)
+  self.msg.debug[8] = tostring(#self.active + #self.hidden)
+  return concat(self.msg.debug)
 end
 
 return pool

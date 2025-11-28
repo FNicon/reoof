@@ -1,8 +1,11 @@
+local concat = table.concat
+
 ---@class Cache
 ---@field private fn function
 ---@field cache table
 ---@field count integer
 ---@field name string
+---@field msg Cache.msg
 local cache = {
   _VERSION = "0.0.0-alpha",
   _DESCRIPTION = "A simple and straightforward cache made for LÖVE.",
@@ -34,9 +37,14 @@ local cache = {
 
 cache.__index = cache
 
-local function toString(v)
-  if (type(v) == "number" or type(v) == "string") then
+--- custom to string function for each type
+---@param v any
+---@return string
+local function to_string(v)
+  if (type(v) == "string") then
     return v
+  elseif (type(v) == "number") then
+    return tostring(v)
   elseif (type(v) == "nil") then
     return ""
   elseif type(v) == "boolean" then
@@ -46,20 +54,34 @@ local function toString(v)
       return "false"
     end
   elseif type(v) == "table" then
-    if (v.__tostring()) then
-      return ""
+    if (v.__tostring) then
+      return tostring(v)
     else
-      return ""
+      local temp = {}
+      local res = {"{"}
+      for k, _v in ipairs(v) do
+        table.insert(temp, "[\"")
+        table.insert(temp, k)
+        table.insert(temp, "\"] = ")
+        table.insert(temp, to_string(_v))
+      end
+      table.insert(res, concat(temp, ","))
+      table.insert(res, "}")
+      return concat(res)
     end
   elseif type(v) == "function" then
     -- local test = debug.getinfo(v)
+    return ""
+  elseif type(v) == "thread" then
+    return ""
+  elseif type(v) == "userdata" then
     return ""
   else
     return ""
   end
 end
 
-local function generateKey(...)
+local function generate_key(...)
   local input = {...}
   local result = ""
   if (#input == 0) then
@@ -67,11 +89,11 @@ local function generateKey(...)
   elseif (#input > 1) then
     local temp = {}
     for _, v in ipairs(input) do
-      table.insert(temp, toString(v))
+      table.insert(temp, to_string(v))
     end
-    result = table.concat( temp ,'.' )
+    result = concat( temp ,'.' )
   else
-    result = toString(...)
+    result = to_string(...)
   end
   if (result == "") then
     error("ERROR : no key is generated. Please input a parameter.")
@@ -92,6 +114,32 @@ function cache.new(fn, name)
   self.cache = {}
   self.count = 0
   self.name = name or ""
+
+  ---@class Cache.msg
+  ---@field debug string[]
+  ---@field warn_release_func string[]
+  ---@field error_key_not_found string[]
+  self.msg = {
+    debug = {
+      "{\"cache\": { \"name\" : \"",
+        self.name,
+      "\", \"count\": ",
+        tostring(self.count),
+      ", \"cache\" : [",
+      "",
+      "]}}"
+    },
+    warn_release_func = {
+      "WARNING : during release, ",
+      "",
+      " don't have release function"
+    },
+    error_key_not_found = {
+      "ERROR : during release, ",
+      "",
+      " not found"
+    }
+  }
   return self
 end
 
@@ -100,7 +148,7 @@ end
 ---@param ... any
 ---@return any resource
 function cache:load(...)
-  local key = generateKey(...)
+  local key = generate_key(...)
   if (self.cache[key] == nil) then
     self.cache[key] = self.fn(...)
     self.count = self.count + 1
@@ -125,17 +173,19 @@ function cache:release(...)
     setmetatable(self, nil)
     self = nil
   else
-    local key = generateKey(...)
+    local key = generate_key(...)
     if (self.cache[key]) then
       if (self.cache[key].release) then
         self.cache[key]:release()
         self.cache[key] = nil
         self.count = self.count - 1
       else
-        print("WARNING : during release, " .. key .. " don't have release function")
+        self.msg.warn_release_func[2] = key
+        print(concat(self.msg.warn_release_func))
       end
     else
-      error("ERROR : during release, " .. key .. " not found")
+      self.msg.error_key_not_found[2] = key
+      error(concat(self.msg.error_key_not_found))
     end
   end
 end
@@ -144,17 +194,15 @@ end
 ---@param self Cache
 ---@return string
 function cache:__tostring()
-  local result = "{\"cache\": { "
-  result = result .. "\"name\" : \"" .. self.name .. "\", "
-  result = result .. "\"count\": " .. self.count .. ", "
   local temp = {}
-  for k, _ in pairs(self.cache) do
-    table.insert(temp, "\"" .. k .. "\"")
+  for k, _ in ipairs(self.cache) do
+    table.insert(temp, "\"")
+    table.insert(temp, k)
+    table.insert(temp, "\"")
   end
-  result = result .. "\"cache\" : ["
-  result = result .. table.concat(temp, ', ' )
-  result = result .. "]" .. "}}"
-  return result
+  self.msg.debug[4] = tostring(self.count)
+  self.msg.debug[6] = concat(temp, " , ")
+  return concat(self.msg.debug)
 end
 
 return cache
