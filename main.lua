@@ -3,7 +3,7 @@ local tostring = tostring
 
 local ex
 local ei = 1
-local emax = 4
+local emax = 3
 
 local lw, lh = love.graphics.getDimensions()
 local dw = lw

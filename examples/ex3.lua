@@ -1,3 +1,4 @@
+local concat = table.concat
 local cache = require("reoof.cache")
 local pool = require("reoof.pool")
 
@@ -123,9 +124,9 @@ end
 function ex.load(_args)
   time = 0
   love.math.setRandomSeed(time)
-  img_cache = cache.new(love.graphics.newImage, PATH .. "." .. ex.__tostring() .. ".img_cache")
-  batch_cache = cache.new(newSpriteBatch, PATH .. "." .. ex.__tostring() .. ".batch_cache")
-  entity_pool = pool.new(entity.spawn, entity.reset, PATH .. "." .. ex.__tostring() .. ".pool", 10)
+  img_cache = cache.new(love.graphics.newImage, concat({PATH,".",ex.__tostring(),".img_cache"}))
+  batch_cache = cache.new(newSpriteBatch, concat({PATH,".",ex.__tostring(),".batch_cache"}))
+  entity_pool = pool.new(entity.spawn, entity.reset, concat({PATH,".",ex.__tostring(),".pool_cache"}), 10)
 end
 
 function ex.update(dt)

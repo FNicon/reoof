@@ -1,3 +1,6 @@
+local concat = table.concat
+local tostring = tostring
+local floor = math.floor
 local cache = require("reoof.cache")
 local pool = require("reoof.pool")
 
@@ -92,8 +95,16 @@ function entity:update(dt)
   end
 end
 
+local is_occupied = {}
+
 function entity:draw()
-  self.batch:add(self.x, self.y, self.r, self.sx, self.sy, self.ox, self.oy, self.kx, self.ky)
+  local key = concat({
+    tostring(floor(self.x)), tostring(floor(self.y))
+  })
+  if (is_occupied[key] == nil) then
+    self.batch:add(self.x, self.y, self.r, self.sx, self.sy, self.ox, self.oy, self.kx, self.ky)
+    is_occupied[key] = ""
+  end
 end
 
 function entity:release()
@@ -123,9 +134,9 @@ end
 function ex.load(_args)
   time = 0
   love.math.setRandomSeed(time)
-  img_cache = cache.new(love.graphics.newImage, PATH .. "." .. ex.__tostring() .. ".img_cache")
-  batch_cache = cache.new(newSpriteBatch, PATH .. "." .. ex.__tostring() .. ".batch_cache")
-  entity_pool = pool.new(entity.spawn, entity.reset, PATH .. "." .. ex.__tostring() .. ".pool")
+  img_cache = cache.new(love.graphics.newImage, concat({PATH,".",ex.__tostring(),".img_cache"}))
+  batch_cache = cache.new(newSpriteBatch, concat({PATH,".",ex.__tostring(),".batch_cache"}))
+  entity_pool = pool.new(entity.spawn, entity.reset, concat({PATH,".",ex.__tostring(),".pool"}))
 end
 
 function ex.update(dt)
@@ -140,13 +151,25 @@ function ex.update(dt)
   end
 end
 
+local prev_active = 0
+
+local function update_batch()
+  if (entity_pool.active) then
+    if (prev_active ~= #entity_pool.active) then
+      for _, v in pairs(batch_cache.cache) do
+        v:clear()
+      end
+      is_occupied = {}
+      for _,v in pairs(entity_pool.active) do
+        v:draw()
+      end
+    end
+    prev_active = #entity_pool.active
+  end
+end
+
 local function draw_batch()
-  for _, v in pairs(batch_cache.cache) do
-    v:clear()
-  end
-  for _,v in pairs(entity_pool.active) do
-    v:draw()
-  end
+  update_batch()
   for _, v in pairs(batch_cache.cache) do
     love.graphics.draw(v)
   end
@@ -170,6 +193,9 @@ function ex.quit()
   img_cache:release()
   batch_cache:release()
   entity_pool:release()
+  time = 0
+  prev_active = 0
+  is_occupied = {}
   print("quit")
   print(ex)
 end

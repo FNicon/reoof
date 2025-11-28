@@ -1,3 +1,4 @@
+local concat = table.concat
 local cache = require("reoof.cache")
 
 local PATH = (...):gsub('%.[^%.]+$', '')
@@ -12,20 +13,26 @@ local lw = love.graphics.getWidth()
 local lh = love.graphics.getHeight()
 
 local audio_cache
+local audio_load
+local audio_str
 
 function ex.load(_args)
-  audio_cache = cache.new(love.audio.newSource, PATH .. "." .. ex.__tostring() .. ".audio_cache")
+  audio_cache = cache.new(love.audio.newSource, concat({PATH, "." , ex.__tostring(), ".audio_cache"}))
+  audio_load = audio_cache.load
+  audio_str = audio_cache.__tostring
 end
 
 function ex.update(dt)
-  audio_cache:load(assets[1], "static"):play()
+  if (not audio_load(audio_cache, assets[1], "static"):isPlaying()) then
+    audio_load(audio_cache, assets[1], "static"):play()
+  end
 end
 
 function ex.draw()
   love.graphics.setColor(1, 0, 0, 1)
   love.graphics.rectangle("fill", 0, 0, lw, 20)
   love.graphics.setColor(1, 1, 1, 1)
-  love.graphics.print(audio_cache:__tostring(), 0, 0)
+  love.graphics.print(audio_str(audio_cache), 0, 0)
 end
 
 function ex.quit()
