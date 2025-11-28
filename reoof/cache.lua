@@ -1,4 +1,5 @@
 local concat = table.concat
+local insert = table.insert
 
 ---@class Cache
 ---@field private fn function
@@ -60,13 +61,13 @@ local function to_string(v)
       local temp = {}
       local res = {"{"}
       for k, _v in ipairs(v) do
-        table.insert(temp, "[\"")
-        table.insert(temp, k)
-        table.insert(temp, "\"] = ")
-        table.insert(temp, to_string(_v))
+        insert(temp, "[\"")
+        insert(temp, k)
+        insert(temp, "\"] = ")
+        insert(temp, to_string(_v))
       end
-      table.insert(res, concat(temp, ","))
-      table.insert(res, "}")
+      insert(res, concat(temp, ","))
+      insert(res, "}")
       return concat(res)
     end
   elseif type(v) == "function" then
@@ -89,7 +90,7 @@ local function generate_key(...)
   elseif (#input > 1) then
     local temp = {}
     for _, v in ipairs(input) do
-      table.insert(temp, to_string(v))
+      insert(temp, to_string(v))
     end
     result = concat( temp ,'.' )
   else
@@ -196,9 +197,9 @@ end
 function cache:__tostring()
   local temp = {}
   for k, _ in ipairs(self.cache) do
-    table.insert(temp, "\"")
-    table.insert(temp, k)
-    table.insert(temp, "\"")
+    insert(temp, "\"")
+    insert(temp, k)
+    insert(temp, "\"")
   end
   self.msg.debug[4] = tostring(self.count)
   self.msg.debug[6] = concat(temp, " , ")

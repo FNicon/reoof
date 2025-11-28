@@ -1,4 +1,6 @@
 local concat = table.concat
+local insert = table.insert
+local remove = table.remove
 
 ---@class Pool
 ---@field private fn function
@@ -124,14 +126,14 @@ function pool:put(entity)
   if (idx) then
     if (self.max) then
       if (#self.hidden < self.max) then
-        table.insert(self.hidden, entity)
+        insert(self.hidden, entity)
       else
         self:release(entity)
       end
     else
-      table.insert(self.hidden, entity)
+      insert(self.hidden, entity)
     end
-    table.remove(self.active, idx)
+    remove(self.active, idx)
   else
     print(self.msg.warn_put_wrong)
   end
@@ -145,13 +147,13 @@ end
 function pool:get(...)
   local entity = self.hidden[#self.hidden]
   if (entity) then
-    table.insert(self.active, entity)
-    table.remove(self.hidden, #self.hidden)
+    insert(self.active, entity)
+    remove(self.hidden, #self.hidden)
     self.rfn(entity, ...)
     return entity
   else
     entity = self.fn(...)
-    table.insert(self.active, entity)
+    insert(self.active, entity)
     return entity
   end
 end
@@ -179,7 +181,7 @@ function pool:release(entity)
     if (idx) then
       if (self.active[idx].release) then
         self.active[idx]:release()
-        table.remove(self.active, idx)
+        remove(self.active, idx)
       else
         self.msg.warn_release_active_wrong[2] = tostring(idx)
         print(concat(self.msg.warn_release_active_wrong))
@@ -189,7 +191,7 @@ function pool:release(entity)
       if (idx) then
         if (self.hidden[idx].release) then
           self.hidden[idx]:release()
-          table.remove(self.hidden, idx)
+          remove(self.hidden, idx)
         else
           self.msg.warn_release_hidden_wrong[2] = tostring(idx)
           print(concat(self.msg.warn_release_hidden_wrong))
