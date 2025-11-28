@@ -196,10 +196,8 @@ end
 ---@return string
 function cache:__tostring()
   local temp = {}
-  for k, _ in ipairs(self.cache) do
-    insert(temp, "\"")
-    insert(temp, k)
-    insert(temp, "\"")
+  for k, _ in pairs(self.cache) do
+    insert(temp, concat({"\"", k, "\""}))
   end
   self.msg.debug[4] = tostring(self.count)
   self.msg.debug[6] = concat(temp, " , ")
