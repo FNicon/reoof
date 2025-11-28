@@ -1,6 +1,5 @@
 local concat = table.concat
 local tostring = tostring
-local sformat = string.format
 
 local ex
 local ei = 1
@@ -56,12 +55,33 @@ local debug_msg = {
   " shaderswitches : ",
   "",
   " fonts : ",
-  "",
-  " dt : ",
-  "",
-  " is : ",
-  "",
+  ""
 }
+
+local function unpack20(tbl)
+  return  tbl[1], tbl[2], tbl[3], tbl[4], tbl[5], tbl[6], tbl[7], tbl[8], tbl[9], tbl[10],
+          tbl[11], tbl[12], tbl[13], tbl[14], tbl[15], tbl[16], tbl[17], tbl[18], tbl[19], tbl[20]
+end
+
+local graph_fps = {0, lh, 0, lh, 0, lh, 0, lh, 0, lh,
+                  0, lh, 0, lh, 0, lh, 0, lh, 0, lh}
+local max_dt = 20
+local new_idx = 1
+
+local function update_graph_dt(fps)
+  new_idx = new_idx + 2
+  if (new_idx > max_dt) then
+    new_idx = 1
+  end
+  graph_fps[new_idx] = (new_idx * 5) -- x
+  graph_fps[new_idx + 1] = lh - fps -- y
+end
+
+local function draw_graph_dt()
+  love.graphics.setColor(0, 1, 0, 1)
+  love.graphics.line(unpack20(graph_fps))
+  love.graphics.setColor(1, 1, 1, 1)
+end
 
 function love.load(_args)
   love.window.setVSync(0)
@@ -81,17 +101,14 @@ function love.load(_args)
   end
 end
 
-local prev_dt = 0
-local delta_label = ""
-
 function love.update(dt)
   if (ex and ex.update) then
     ex.update(dt)
   else
     love.event.quit( "restart" )
   end
-  delta_label = dt > prev_dt and "slower" or "faster"
-  prev_dt = dt
+
+  update_graph_dt(love.timer.getFPS())
 end
 
 local stats = {}
@@ -100,6 +117,7 @@ local function debug()
   stats = love.graphics.getStats( stats )
   love.graphics.setColor(1, 0, 0, 1)
   love.graphics.rectangle("fill", 0, lh - dh, dw, dh)
+  draw_graph_dt()
   love.graphics.setColor(1, 1, 1, 1)
 
   debug_msg[2] = tostring(love.timer.getFPS())
@@ -111,8 +129,6 @@ local function debug()
   debug_msg[14] = tostring(stats.canvases)
   debug_msg[16] = tostring(stats.shaderswitches)
   debug_msg[18] = tostring(stats.fonts)
-  debug_msg[20] = sformat("%.3f", prev_dt)
-  debug_msg[22] = tostring(delta_label)
 
   love.graphics.print(concat(debug_msg),0, lh - dh)
   love.graphics.print("< (left arrow) prev", 0, lh / 2)
